@@ -1,0 +1,624 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="apple-mobile-web-app-title" content="SR-Doku"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="manifest" href="site.webmanifest"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style></head><body>
+<title>SR-Doku AUD²IT</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1a2e">
+<style>
+/* Layout: sticky Kopf mit Timern + Status, darunter ACiLS-Buchstabenleiste als Navigation, eine Spalte Karten, auf Tablet zweispaltig */
+:root{
+  --bg:#eef2f7; --surface:#ffffff; --surface2:#f6f8fb; --line:#cfd8e4; --fg:#142033; --muted:#5d6b80;
+  --red:#c4202a; --redsoft:#fbe9ea; --blue:#2c64ad; --bluesoft:#e7eef8; --orange:#e98a12; --orangesoft:#fdf1e1;
+  --green:#1f8a52; --greensoft:#e4f4ea; --head:#0f1a2e; --headfg:#ffffff; --headmuted:#9fb0c8;
+  --shadow:0 1px 2px rgba(20,32,51,.08),0 2px 8px rgba(20,32,51,.06);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1220; --surface:#131d30; --surface2:#18243a; --line:#2a3a55; --fg:#e7edf6; --muted:#97a6bd;
+  --red:#ef4b53; --redsoft:#3a1a20; --blue:#6aa0ea; --bluesoft:#1a2a45; --orange:#f3a43c; --orangesoft:#3a2a14;
+  --green:#3fc07c; --greensoft:#153325; --head:#070d18; --headfg:#ffffff; --headmuted:#8798b3;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1220; --surface:#131d30; --surface2:#18243a; --line:#2a3a55; --fg:#e7edf6; --muted:#97a6bd;
+  --red:#ef4b53; --redsoft:#3a1a20; --blue:#6aa0ea; --bluesoft:#1a2a45; --orange:#f3a43c; --orangesoft:#3a2a14;
+  --green:#3fc07c; --greensoft:#153325; --head:#070d18; --headfg:#ffffff; --headmuted:#8798b3;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);font-family:var(--sans)}
+body{margin:0;font-size:15px;line-height:1.4;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--head)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+/* ---------- Kopf ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--head);color:var(--headfg);
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:8px 0}
+.toprow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:.02em;font-size:15px;white-space:nowrap}
+.brand small{display:block;font-weight:500;color:var(--headmuted);font-size:11px;letter-spacing:.04em}
+.timers{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.tm{background:rgba(255,255,255,.08);border-radius:8px;padding:3px 8px;min-width:76px}
+.tm b{display:block;font:700 18px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.tm span{font-size:10px;color:var(--headmuted);text-transform:uppercase;letter-spacing:.06em}
+.tm.warn b{color:#ffb547}
+.statusrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:7px 0 6px}
+.pill{border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.12);color:var(--headfg);border:0}
+.pill.krit{background:#d6262f}.pill.stab{background:#1f8a52}.pill.ghost{background:transparent;border:1px dashed rgba(255,255,255,.35);color:var(--headmuted);font-weight:600}
+.topbtns{display:flex;gap:6px;margin-left:auto}
+.tbtn{background:rgba(255,255,255,.12);border:0;border-radius:8px;color:#fff;padding:7px 10px;font-weight:700;font-size:13px;min-height:36px}
+.tbtn.primary{background:var(--red)}
+/* Buchstabenleiste */
+.steps{display:flex;gap:4px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.steps::-webkit-scrollbar{display:none}
+.st{flex:1 0 auto;min-width:52px;border:0;border-radius:8px;background:#ffffff;color:#c4202a;padding:4px 8px 3px;text-align:center;
+  box-shadow:inset 0 -3px 0 #b9c6d8;font-weight:900;font-size:19px;line-height:1.05}
+.st small{display:block;font-size:9.5px;font-weight:700;color:#4a5870;letter-spacing:.03em;text-transform:uppercase}
+.st.on{background:#c4202a;color:#fff;box-shadow:inset 0 -3px 0 #8e141b}
+.st.on small{color:#ffd9db}
+.st .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1f8a52;margin-left:3px;vertical-align:super}
+
+/* ---------- Inhalt ---------- */
+main{padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:12px 90px;max-width:1100px;margin:0 auto}
+.grid{display:grid;gap:12px}
+@media (min-width:820px){.grid.two{grid-template-columns:1fr 1fr}}
+.card{background:var(--surface);border:2px solid var(--blue);border-radius:var(--r);overflow:hidden;min-width:0}
+.card.red{border-color:var(--red)}.card.orange{border-color:var(--orange)}.card.green{border-color:var(--green)}
+.ch{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bluesoft)}
+.card.red .ch{background:var(--red);color:#fff}
+.card.orange .ch{background:var(--orangesoft)}.card.green .ch{background:var(--greensoft)}
+.ltr{font-weight:900;font-size:26px;line-height:1;color:var(--red);min-width:26px;text-align:center}
+.card.red .ltr{color:#fff}
+.ch h2{margin:0;font-size:16px;font-weight:800;text-wrap:balance}
+.ch .sub{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
+.card.red .ch .sub{color:#ffe0e2}
+.cb{padding:12px;display:grid;gap:10px}
+.hint{font-size:12.5px;color:var(--muted)}
+.stopp{background:var(--redsoft);border:2px solid var(--red);border-radius:var(--r);padding:10px 12px;font-weight:700}
+.stopp b{color:var(--red)}
+h3{margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+
+/* Felder */
+.fields{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.fields.wide{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.fld{display:grid;gap:3px;min-width:0}
+.fld>span{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.fld input,.fld textarea,.fld select{width:100%;border:1.5px dashed var(--line);background:var(--surface2);border-radius:8px;padding:9px 10px;min-height:42px;font-size:16px}
+.fld textarea{resize:vertical;min-height:64px}
+.fld input:focus,.fld textarea:focus{border-style:solid;border-color:var(--blue);outline:none}
+.fld input.bad{border-color:var(--red);border-style:solid}
+.vit{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:6px}
+.vit .fld input{font:700 17px var(--mono);text-align:center;padding:8px 4px}
+
+/* Checks */
+.chks{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.chk{display:flex;align-items:center;gap:10px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 10px;min-height:46px;width:100%}
+.chk i{flex:0 0 22px;height:22px;border:2px solid var(--muted);border-radius:6px;position:relative}
+.chk span{flex:1;font-weight:600}
+.chk time{font:600 12px var(--mono);color:var(--muted)}
+.chk.on{border-color:var(--green);background:var(--greensoft)}
+.chk.on i{background:var(--green);border-color:var(--green)}
+.chk.on i::after{content:"";position:absolute;left:6px;top:1px;width:6px;height:12px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+
+/* Segmente */
+.seg{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;align-content:flex-start}
+.fld{align-content:start}
+@media (max-width:520px){.brand small{display:none}.tm{min-width:0;flex:1}.timers{width:100%;margin-left:0}.tm b{font-size:16px}.statusrow{padding:5px 0 4px}}
+.seg button{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;min-height:42px}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.seg.big button{flex:1;font-size:18px;padding:14px;border-radius:10px}
+.seg button.on[data-val="kritisch"]{background:var(--red);border-color:var(--red)}
+.seg button.on[data-val="stabil"]{background:var(--green);border-color:var(--green)}
+.seg button.on[data-val="Problem"]{background:var(--red);border-color:var(--red)}
+.seg button.on[data-val="o. B."]{background:var(--green);border-color:var(--green)}
+.seg button.sugg{border-color:var(--orange);box-shadow:inset 0 0 0 2px var(--orange)}
+
+/* cABCDE-Zeilen */
+.abc{display:grid;gap:0}
+.abcrow{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-top:1.5px dashed var(--line)}
+.abcrow:first-child{border-top:0}
+.abcrow .ltr{font-size:28px;padding-top:2px}
+.abcrow .ltr.c{font-size:24px}
+.abcin{display:grid;gap:8px;min-width:0}
+.abct{font-weight:800}
+.pdfbox{display:grid;gap:8px;background:var(--surface2);border:1.5px solid var(--line);border-radius:9px;padding:10px}
+.pchk{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}.pchk input{width:20px;height:20px}
+.h3n{text-transform:none;letter-spacing:0;font-weight:500}
+.seg.prio button{min-width:58px;font-size:19px;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.ord{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fff;color:var(--blue);font-size:12px;font-weight:900}
+.prioline{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border:1.5px dashed var(--line);border-radius:9px;min-height:46px}
+.prioline.full{border:1.5px solid var(--green);background:var(--greensoft)}
+.pchip{font-weight:900;font-size:20px;color:var(--red)}.pchip small{font-size:12px;color:var(--muted);margin-right:2px}
+.arr{color:var(--muted);font-weight:700}.pstat{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:700}
+.hl{color:var(--red);font-weight:900;font-size:14px;margin-right:2px}
+.abct small{font-weight:600;color:var(--muted)}
+@media (min-width:820px){.abcin.split{grid-template-columns:1fr 1fr}}
+.mon{display:flex;flex-wrap:wrap;gap:6px}
+.mon .chk{width:auto;flex:1 0 120px}
+
+/* Buttons */
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:800;min-height:44px;background:var(--blue);color:#fff}
+.btn.red{background:var(--red)}.btn.green{background:var(--green)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--fg)}
+.btn.small{min-height:34px;padding:6px 10px;font-size:13px}
+.big-go{width:100%;font-size:17px;padding:14px}
+
+/* Listen */
+.list{display:grid;gap:6px}
+.li{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface)}
+.li .t{font:600 12px var(--mono);color:var(--muted);white-space:nowrap;padding-top:2px}
+.li .x{flex:1;min-width:0;overflow-wrap:anywhere}
+.li.done .x{text-decoration:line-through;color:var(--muted)}
+.li button{border:0;background:transparent;color:var(--muted);font-weight:800;padding:2px 6px}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700;background:var(--surface2);border:1px solid var(--line)}
+.tag.ok{background:var(--greensoft);border-color:var(--green)}.tag.no{background:var(--redsoft);border-color:var(--red)}.tag.q{background:var(--orangesoft);border-color:var(--orange)}
+.tblwrap{overflow-x:auto}
+table.vt{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+.vt th,.vt td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+.vt th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.vt td:first-child,.vt th:first-child{text-align:left}
+.empty{color:var(--muted);font-style:italic;font-size:13.5px}
+
+/* Protokoll */
+.proto{font-size:14px}
+.proto h4{margin:12px 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--red)}
+.proto p{margin:2px 0}
+.proto .k{color:var(--muted)}
+pre.txt{white-space:pre-wrap;font:13px/1.45 var(--mono);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:340px;overflow:auto}
+
+/* Sheet */
+.sheetbg{position:fixed;inset:0;background:rgba(5,10,20,.55);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:640px;border-radius:16px 16px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  max-height:88vh;overflow:auto;display:grid;gap:12px}
+@media (min-width:700px){.sheetbg{align-items:center}.sheet{border-radius:16px}}
+.sheet h2{margin:0;font-size:18px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--head);color:#fff;padding:10px 16px;border-radius:10px;z-index:60;font-weight:700;box-shadow:var(--shadow);max-width:90vw}
+.warnbox{background:var(--orangesoft);border:1.5px solid var(--orange);border-radius:9px;padding:8px 10px;font-size:13.5px}
+.foot{font-size:11.5px;color:var(--muted);text-align:center;padding:16px 8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  .top,.noprint,body::before{display:none!important}
+  main{padding:0;max-width:none}
+  .card{border:1px solid #999;break-inside:avoid}
+  body,html{background:#fff;color:#000}
+}
+</style>
+
+<header class="top" id="top">
+  <div class="toprow">
+    <div class="brand">SR-Doku <small>(PR_E-)AUD²IT · SINNHAFT</small></div>
+    <div class="timers">
+      <div class="tm" id="tmA"><b>--:--</b><span>seit Anmeldung</span></div>
+      <div class="tm" id="tmE"><b>--:--</b><span>ETA</span></div>
+      <div class="tm" id="tmS"><b>--:--</b><span>im Schockraum</span></div>
+    </div>
+  </div>
+  <div class="statusrow">
+    <span class="pill ghost" id="pZust">Zustand offen</span>
+    <span class="pill ghost" id="pLeit">Leitsymptom –</span>
+    <span class="pill ghost" id="pPrio">Prio –</span>
+    <span class="pill ghost" id="pKg">kg –</span>
+    <span class="pill ghost" id="pVit" hidden></span>
+    <div class="topbtns">
+      <button class="tbtn" data-act="vitals" title="Vitalwerte erfassen">+ Vitalwerte</button>
+      <button class="tbtn primary" data-act="measure" title="Maßnahme / Medikament dokumentieren">+ Maßnahme</button>
+    </div>
+  </div>
+  <nav class="steps" id="steps" aria-label="Ablauf"></nav>
+</header>
+
+<main id="view"></main>
+<div id="layer"></div>
+
+<script>
+"use strict";
+/* ================= Daten & Speicher ================= */
+const KEY='srdoku_v1';
+const blank=()=>({v:1,created:Date.now(),tab:'pr',
+  pre:{tAnm:'',eta:'',rm:'',info:''},anmAt:null,etaAt:null,arrAt:null,uebEnd:null,
+  chk:{},
+  sinn:{I:{sex:'',name:'',age:'',wt:'',wtType:'',kind:''},N1:{was:'',wie:'',wann:'',wo:''},
+    N2:{c:{f:'',h:''},A:{f:'',h:''},B:{f:'',h:''},C:{f:'',h:''},D:{f:'',h:''},E:{f:'',h:''}},
+    v:{spo2:'',af:'',hf:'',rr:'',rekap:'',gcs:'',bz:'',temp:''},
+    amp:{S:'',A:'',M:'',P:'',L:'',E:'',R:''},fazit:'',team:'',ttt:''},
+  prim:{A:{st:'',f:'',h:''},B:{st:'',f:'',h:''},C:{st:'',f:'',h:''},D:{st:'',f:'',h:''},E:{st:'',f:'',h:''}},
+  vit:[],
+  tto2:{zust:'',prio:[],leit:[],leitFree:'',note:'',at:null},
+  opq:{O:'',P:'',Q:'',R:'',S:'',T:''},
+  unters:'',reass:[],
+  dd:{ad:'',list:[]},
+  diag:{},
+  tto3:{plan:'',dispo:'',dispoFree:'',note:'',at:null},
+  todo:[],meds:[],log:[]});
+let S;const CKEY='srdoku_cfg';let CFG={pseudo:true};try{Object.assign(CFG,JSON.parse(localStorage.getItem(CKEY)||'{}'))}catch(e){}
+function saveCfg(){try{localStorage.setItem(CKEY,JSON.stringify(CFG))}catch(e){}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=merge(blank(),o);return}}catch(e){}S=blank()}
+function norm(){const t=S.tto2;if(!Array.isArray(t.leit))t.leit=t.leit?[t.leit]:[];if(!Array.isArray(t.prio))t.prio=t.prio?[t.prio]:[]}
+function merge(a,b){for(const k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k]))merge(a[k],b[k]);else a[k]=b[k]}return a}
+let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},150)}
+function g(p){return p.split('.').reduce((o,k)=>o==null?undefined:o[k],S)}
+function sv(p,val){const ks=p.split('.');let o=S;for(let i=0;i<ks.length-1;i++){if(o[ks[i]]==null)o[ks[i]]={};o=o[ks[i]]}o[ks[ks.length-1]]=val;save()}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const hm=t=>{if(!t)return '';const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const hms=t=>{if(!t)return '';const d=new Date(t);return hm(t)+':'+pad(d.getSeconds())};
+const dur=ms=>{if(ms<0)ms=0;const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+':'+pad(m):pad(m))+':'+pad(x)};
+function log(text){S.log.push({t:Date.now(),x:text});save()}
+
+/* ================= Inhalte (aus Poster + Flipchart 2.1) ================= */
+const PREP=[['p_med','Notfallmedikamente'],['p_sono','Notfallsonographie'],['p_mat','Materialcheck'],['p_alarm','Alarmierung des Schockraumteams']];
+const PSA=[['psa_hs','Einmalhandschuhe'],['psa_br','Schutzbrille'],['psa_mund','Mundschutz'],['psa_kit','ggf. Einmalkittel']];
+const RES=[['r_its','Intensivstation'],['r_rad','Diagnostik (Radiologie)'],['r_blut','Blutprodukte'],['r_lab','Labor'],['r_op','OP']];
+const TTO1=[['t1_team','Team komplett & gebrieft'],['t1_mat','Material / Notfallmedikamente gewichtsadaptiert'],['t1_res','Ressourcen (Radiologie, ITS, OP)'],['t1_warm','Wärmemanagement'],['t1_ang','Umgang mit Angehörigen / Eltern bzw. Bezugspersonen']];
+const FSR=[['fsr_soz','Soziale Interaktion'],['fsr_atm','Atmung'],['fsr_haut','Hautkolorit'],['fsr_mon','Monitor']];
+const N2=[['c','kritische Blutung',[]],['A','Atemweg',[]],['B','Atmung / Oxygenierung',[['spo2','SpO₂ %'],['af','AF /min']]],['C','Kreislauf / Hämodynamik',[['hf','HF /min'],['rr','RR mmHg'],['rekap','Rekap s']]],['D','Vigilanz / Neurologie',[['gcs','GCS'],['bz','BZ']]],['E','Exposure / Temperatur',[['temp','Temp °C']]]];
+const AMP=[['A','Allergien'],['M','Medikamente'],['P','Vorgeschichte'],['L','Letzte orale Aufnahme'],['E','vorherige Ereignisse'],['R','Risikofaktoren']];
+const PRIM=[['A','Airway','freie Atemwege'],['B','Breathing','Oxygenierung / Ventilation'],['C','Circulation','Hämodynamik'],['D','Disability','Vigilanz'],['E','Exposure & Environment','Entkleiden, Inspektion und Wärmemanagement']];
+const MON=[['m_spo2','① SpO₂'],['m_ekg','② EKG'],['m_nibd','③ NIBD'],['m_temp','Temp.'],['m_lab','Labor'],['m_bga','Venöse BGA']];
+const LEIT=['Dyspnoe','Schock','Vigilanzminderung','Thoraxschmerz','Bauchschmerz','anderes'];
+const OPQ=[['O','Onset – Beginn'],['P','Provocation / Palliation'],['Q','Quality – Qualität'],['R','Radiation – Ausstrahlung'],['S','Severity – Stärke (NRS)'],['T','Time – Zeitverlauf']];
+const DIAG=[['d_lab','Labor'],['d_bga','BGA'],['d_ekg','12-Kanal-EKG'],['d_sono','Sonographie / POCUS'],['d_rx','Röntgen'],['d_ct','CT'],['d_more','Weitere']];
+const TTO3=[['t3_bef','Befunde gesammelt'],['t3_prio','Priorisierung / Arbeitsdiagnose'],['t3_diag','Planung weitere Diagnostik'],['t3_verl','Planung Verlegung / Disposition'],['t3_ang','Information an Angehörige']];
+const DISPO=['Intensivstation','IMC','OP','Herzkatheter','Normalstation','Verlegung extern','ambulant','anderes'];
+const ALLCHK=Object.fromEntries([...PREP,...PSA,...RES,...TTO1,...FSR,...MON,...DIAG,...TTO3,['s_stop','STOPP – Team bereit, hands-off'],['f_done','Fazit durchgeführt'],['t_done','Teamfragen durchgeführt'],['u_ang','Angehörige informiert']]);
+
+const TABS=[
+  {id:'pr',l:'PR_',s:'Vorbereitung'},
+  {id:'ueb',l:'S·I·N',s:'Übergabe'},
+  {id:'e',l:'E',s:'ABCDE'},
+  {id:'tto2',l:'–',s:'TTO II'},
+  {id:'aud',l:'AUD²',s:'Sekundär'},
+  {id:'it',l:'IT',s:'TTO III · To Do'},
+  {id:'prot',l:'≡',s:'Protokoll'}];
+
+/* ================= Bausteine ================= */
+function fld(p,label,o={}){const im=o.num?' inputmode="decimal"':'';const ph=o.ph?` placeholder="${esc(o.ph)}"`:'';
+  if(o.ta)return `<label class="fld"><span>${label}</span><textarea data-bind="${p}" rows="${o.rows||2}"${ph}></textarea></label>`;
+  return `<label class="fld"><span>${label}</span><input data-bind="${p}" type="${o.type||'text'}"${im}${ph} autocomplete="off"></label>`}
+function chk(k,label){return `<button class="chk" data-chk="${k}" aria-pressed="false"><i></i><span>${esc(label||ALLCHK[k])}</span><time></time></button>`}
+function seg(p,opts,cls=''){return `<div class="seg ${cls}" data-seg="${p}">${opts.map(o=>`<button data-val="${esc(o)}">${esc(o)}</button>`).join('')}</div>`}
+function card(ltr,title,body,o={}){return `<section class="card ${o.c||''}" ${o.id?`id="${o.id}"`:''}><div class="ch">${ltr?`<span class="ltr">${ltr}</span>`:''}<h2>${title}</h2>${o.sub?`<span class="sub">${o.sub}</span>`:''}</div><div class="cb">${body}</div></section>`}
+
+/* ================= Ansichten ================= */
+const V={};
+V.pr=()=>`<div class="grid">
+${card('','Voranmeldung',`<div class="fields">
+ ${fld('pre.tAnm','Uhrzeit Anmeldung',{type:'time'})}${fld('pre.eta','Eintreffzeit (ETA)',{type:'time'})}${fld('pre.rm','Rettungsmittel',{ph:'z. B. RTW + NEF'})}</div>
+ ${fld('pre.info','Kurzinfo der Leitstelle / des Rettungsdienstes',{ta:1})}
+ <div class="row"><button class="btn" data-act="anmNow">Anmeldung jetzt</button><span class="hint">Startet die Uhr „seit Anmeldung“. Die ETA erzeugt einen Countdown im Kopf.</span></div>`,{sub:'Uhrzeit · Eintreffzeit · Rettungsmittel'})}
+<div class="grid two">
+${card('P','Präparation',`<div class="chks">${PREP.map(x=>chk(x[0])).join('')}</div><h3>PSA</h3><div class="chks">${PSA.map(x=>chk(x[0])).join('')}</div>`)}
+${card('R','Ressourcen',`<p class="hint">Information der Transferstellenpartner</p><div class="chks">${RES.map(x=>chk(x[0])).join('')}</div>`)}
+</div>
+${card('_','Team-Time-Out I',`<div class="chks">${TTO1.map(x=>chk(x[0])).join('')}</div>
+ <h3>5-Second-Round · Ersteindruck</h3><div class="chks">${FSR.map(x=>chk(x[0])).join('')}</div>
+ ${fld('sinn.ttt','Ersteindruck (Freitext)',{ph:'z. B. wach, Sprechdyspnoe, blass-kaltschweißig'})}
+ <button class="btn red big-go" data-act="arrive">${S.arrAt?'Patient eingetroffen um '+hm(S.arrAt)+' · korrigieren':'Patient eingetroffen → Übergabe'}</button>`,{c:'red'})}
+</div>`;
+
+V.ueb=()=>`<div class="grid">
+<div class="stopp"><b>STOPP!</b> Face-to-Face · hands-off: Manipulationen am Patienten vermeiden · Team bereit?
+ <div style="margin-top:8px">${chk('s_stop')}</div></div>
+${card('I','Identifikation',`<div class="fields">
+ ${fld('sinn.I.name','Nachname')}${fld('sinn.I.age','Alter',{num:1})}
+ <div class="fld"><span>Geschlecht</span>${seg('sinn.I.sex',['w','m','d'])}</div>
+ <div class="fld"><span>Patient</span>${seg('sinn.I.kind',['Erwachsen','Kind'])}</div></div>
+ <div class="fields">${fld('sinn.I.wt','Gewicht kg',{num:1})}<div class="fld"><span>Gewicht ist</span>${seg('sinn.I.wtType',['gemessen','geschätzt'])}</div></div>
+ <p class="hint">Der Name wird nur lokal auf diesem Gerät gespeichert und mit „Neuer Fall“ gelöscht.</p>`)}
+${card('N','Notfallereignis',`<div class="fields wide">${fld('sinn.N1.was','Was?')}${fld('sinn.N1.wie','Wie?')}${fld('sinn.N1.wann','Wann?')}${fld('sinn.N1.wo','Wo / Woher?')}</div>`)}
+${card('N','Notfallpriorität · cABCDE</h2><span class="ltr" style="margin-left:14px">H</span><h2>Handlung',`<p class="hint">Links Befund, rechts Handlung: durchgeführt / bewusst unterlassen. Die Werte werden bei „Übergabe abgeschlossen“ als RD-Vitalwerte übernommen.</p>
+<div class="abc">${N2.map(([L,t,vs])=>`<div class="abcrow"><span class="ltr ${L==='c'?'c':''}">${L}</span><div class="abcin">
+ <div class="abct">${t}</div>
+ ${vs.length?`<div class="vit">${vs.map(v=>fld('sinn.v.'+v[0],v[1],{num:v[0]!=='rr',ph:v[0]==='rr'?'120/80':''})).join('')}</div>`:''}
+ <div class="abcin split">${fld(`sinn.N2.${L}.f`,'Befund',{ta:1})}${fld(`sinn.N2.${L}.h`,'<b class="hl">H</b> Handlung: durchgeführt / bewusst unterlassen',{ta:1})}</div>
+</div></div>`).join('')}</div>`)}
+${card('A','Anamnese',`<div class="fields wide">${AMP.map(([k,t])=>fld('sinn.amp.'+k,k+' · '+t,{ta:1})).join('')}</div><p class="hint">Diese Felder sind identisch mit SAMPLER im Reiter AUD² und müssen nicht doppelt erfasst werden.</p>`)}
+<div class="grid two">
+${card('F','Fazit',`${chk('f_done')}${fld('sinn.fazit','Fazit RD (Zusammenfassung)',{ta:1})}`)}
+${card('T','Teamfragen',`${chk('t_done')}${fld('sinn.team','Offene Fragen / Antworten',{ta:1})}`)}
+</div>
+<button class="btn red big-go" data-act="uebEnd">${S.uebEnd?'Übergabe abgeschlossen um '+hm(S.uebEnd):'Übergabe abgeschlossen → Erstversorgung'}</button>
+<p class="hint">SINNHAFT: Gräff et al., Notfall Rettungsmed 2024 · RDA Bayern/DGINA 2024 · Päd(PR_E-)AUD²IT: Michael et al. 2025</p>
+</div>`;
+
+function lastV(k){for(let i=S.vit.length-1;i>=0;i--){const v=S.vit[i];if(k==='rr'){if(v.sys)return v.sys+'/'+(v.dia||'?')}else if(v[k]!==''&&v[k]!=null)return v[k]}return ''}
+function suggestPrio(){for(const [L] of PRIM)if(S.prim[L].st==='Problem')return L;return ''}
+function suggOrder(){const all=PRIM.map(p=>p[0]);const pb=all.filter(L=>S.prim[L].st==='Problem');return [...pb,...all.filter(L=>!pb.includes(L))]}
+const prioTxt=()=>S.tto2.prio.join(' › ');
+V.e=()=>{const map={B:[['spo2','SpO₂'],['af','AF']],C:[['hf','HF'],['rr','RR'],['rekap','Rekap']],D:[['gcs','GCS'],['bz','BZ']],E:[['temp','Temp']]};
+return `<div class="grid">
+<div class="grid two">
+${card('E','Erstversorgung · primary survey',`<div class="abc">${PRIM.map(([L,t,s])=>`<div class="abcrow"><span class="ltr">${L}</span><div class="abcin">
+ <div class="abct">${t} <small>– ${s}</small></div>
+ ${map[L]?`<div class="hint">Letzte Werte: ${map[L].map(([k,n])=>`${n} <b>${esc(lastV(k))||'–'}</b>`).join(' · ')}</div>`:''}
+ ${seg(`prim.${L}.st`,['o. B.','Problem'])}
+ <div class="abcin split">${fld(`prim.${L}.f`,'Befund',{ta:1})}${fld(`prim.${L}.h`,'Maßnahme',{ta:1})}</div>
+</div></div>`).join('')}</div>`,{c:'orange'})}
+<div class="grid" style="align-content:start">
+${card('','Monitoring',`<p class="hint">Reihenfolge laut Algorithmus: ① SpO₂ ② EKG ③ NIBD</p><div class="mon">${MON.map(x=>chk(x[0])).join('')}</div>`,{c:'orange'})}
+${card('','Vitalwerte-Verlauf',vitTable()+`<button class="btn" data-act="vitals">+ Vitalwerte erfassen</button>`)}
+</div></div>
+<button class="btn red big-go" data-act="goto" data-to="tto2">Weiter zu Team-Time-Out II</button>
+</div>`};
+
+function vitTable(){if(!S.vit.length)return '<p class="empty">Noch keine Vitalwerte erfasst.</p>';
+ return `<div class="tblwrap"><table class="vt"><thead><tr><th>Zeit</th><th>SpO₂</th><th>AF</th><th>HF</th><th>RR</th><th>Rekap</th><th>GCS</th><th>BZ</th><th>Temp</th><th></th></tr></thead><tbody>${
+ S.vit.map((v,i)=>`<tr><td>${hm(v.t)}${v.src?` <span class="tag">${esc(v.src)}</span>`:''}</td><td>${esc(v.spo2)}</td><td>${esc(v.af)}</td><td>${esc(v.hf)}</td><td>${v.sys?esc(v.sys)+'/'+esc(v.dia):''}</td><td>${esc(v.rekap)}</td><td>${esc(v.gcs)}</td><td>${v.bz?esc(v.bz)+' '+esc(v.bzU||''):''}</td><td>${esc(v.temp)}</td><td><button class="btn ghost small noprint" data-act="delVit" data-i="${i}" aria-label="Eintrag löschen">×</button></td></tr>`).join('')}</tbody></table></div>`}
+
+V.tto2=()=>{const pr=S.tto2.prio;const nxt=pr.length<5?suggOrder().find(L=>!pr.includes(L)):'';const probs=PRIM.filter(([L])=>S.prim[L].st==='Problem');
+return `<div class="grid">
+${card('–','Team-Time-Out II',`
+ <h3>Zustand</h3>${seg('tto2.zust',['kritisch','stabil'],'big')}
+ <h3>Formuliere Leitsymptom <span class="h3n">– bis zu zwei</span></h3>
+ <div class="seg">${LEIT.map(l=>{const on=S.tto2.leit.includes(l);return `<button data-act="leit" data-v="${l}" class="${on?'on':''}" aria-pressed="${on}">${l}</button>`}).join('')}</div>
+ <div id="leitFreeWrap" ${S.tto2.leit.includes('anderes')?'':'hidden'}>${fld('tto2.leitFree','Leitsymptom (Freitext)')}</div>
+ <h3>Priorisiere ABCDE <span class="h3n">– alle fünf in der gewünschten Reihenfolge antippen</span></h3>
+ <div class="seg prio">${'ABCDE'.split('').map(L=>{const i=pr.indexOf(L);return `<button data-act="prio" data-l="${L}" class="${i>=0?'on':''}${L===nxt?' sugg':''}" aria-pressed="${i>=0}">${i>=0?`<span class="ord">${i+1}</span>`:''}${L}</button>`}).join('')}</div>
+ <div class="prioline ${pr.length===5?'full':''}">${pr.map((L,i)=>`<span class="pchip"><small>${i+1}.</small>${L}</span>`).join('<span class="arr">›</span>')}<span class="pstat">${pr.length===5?'✓ vollständig':`noch ${5-pr.length} offen`}</span></div>
+ <div class="row"><button class="btn ghost small" data-act="prioSugg">Vorschlag übernehmen</button><button class="btn ghost small" data-act="prioClr">Reihenfolge zurücksetzen</button></div>
+ <p class="hint">${probs.length?'Als Problem markiert: <b>'+probs.map(p=>p[0]).join(', ')+'</b>. ':'In der Erstversorgung ist noch kein Buchstabe als Problem markiert. '}Vorschlag: <b>${suggOrder().join(' › ')}</b> (Problem-Buchstaben zuerst, dann in ABCDE-Reihenfolge; orange = nächster Vorschlag). Erneutes Antippen entfernt einen Buchstaben.</p>
+ ${fld('tto2.note','Kurzzusammenfassung SR-Leitung',{ta:1})}
+ <button class="btn red big-go" data-act="tto2done">${S.tto2.at?'TTO II durchgeführt um '+hm(S.tto2.at)+' · erneut':'TTO II durchgeführt → AUD²'}</button>`,{c:'red'})}
+</div>`};
+
+V.aud=()=>`<div class="grid">
+${card('A','Anamnese',`<h3>SAMPLER</h3><div class="fields wide">${fld('sinn.amp.S','S · Symptome',{ta:1})}${AMP.map(([k,t])=>fld('sinn.amp.'+k,k+' · '+t,{ta:1})).join('')}</div>
+ <h3>OPQRST</h3><div class="fields wide">${OPQ.map(([k,t])=>fld('opq.'+k,k+' · '+t)).join('')}</div>`)}
+${card('U','Untersuchung & Reassessment',`${fld('unters','Untersuchungsbefund',{ta:1,rows:4})}
+ <div class="row"><button class="btn" data-act="reass">Reassessment dokumentieren</button><span class="hint">Öffnet die Vitalwerte und vermerkt das Reassessment in der Chronologie.</span></div>
+ ${S.reass.length?`<div class="list">${S.reass.map(r=>`<div class="li"><span class="t">${hm(r.t)}</span><span class="x">${esc(r.x||'Reassessment')}</span></div>`).join('')}</div>`:''}`)}
+<div class="grid two">
+${card('D','Differentialdiagnose',`<p class="hint">Leitsymptom: <b>${esc(leitTxt()||'– (in TTO II festlegen)')}</b></p>
+ ${fld('dd.ad','Arbeitsdiagnose')}
+ <div class="row"><div class="fld" style="flex:1"><span>Differentialdiagnose hinzufügen</span><input id="ddIn" placeholder="z. B. Lungenarterienembolie" autocomplete="off"></div><button class="btn" data-act="ddAdd" style="align-self:end">+</button></div>
+ <div class="list">${S.dd.list.map((d,i)=>`<div class="li"><span class="x">${esc(d.x)}</span>
+  <button data-act="ddSt" data-i="${i}" title="Status wechseln"><span class="tag ${d.s==='wahrscheinlich'?'q':d.s==='ausgeschlossen'?'no':d.s==='bestätigt'?'ok':''}">${esc(d.s)}</span></button>
+  <button data-act="ddDel" data-i="${i}" aria-label="entfernen">×</button></div>`).join('')||'<p class="empty">Noch keine Differentialdiagnosen.</p>'}</div>`)}
+${card('D','Diagnostik',`<div class="list">${DIAG.map(([k,t])=>`<div style="display:grid;gap:6px">${chk(k,t+' angefordert')}${fld('diag.'+k,'Befund '+t,{ta:1})}</div>`).join('')}</div>`)}
+</div></div>`;
+function leitTxt(){return (S.tto2.leit||[]).map(l=>l==='anderes'?(S.tto2.leitFree||'anderes'):l).join(' + ')}
+
+V.it=()=>{const open=S.todo.filter(x=>!x.d).length;
+return `<div class="grid">
+${card('I','Interpretation · Team-Time-Out III',`<div class="chks">${TTO3.map(x=>chk(x[0])).join('')}</div>
+ ${fld('dd.ad','Arbeitsdiagnose')}
+ ${fld('tto3.plan','Therapieplan',{ta:1,rows:3})}
+ <h3>Disposition</h3>${seg('tto3.dispo',DISPO)}
+ <div id="dispoFreeWrap" ${S.tto3.dispo==='anderes'?'':'hidden'}>${fld('tto3.dispoFree','Disposition (Freitext)')}</div>
+ <button class="btn red big-go" data-act="tto3done">${S.tto3.at?'TTO III durchgeführt um '+hm(S.tto3.at)+' · erneut':'TTO III durchgeführt'}</button>`,{c:'red'})}
+${card('T','To Do',`<div class="fields"><label class="fld" style="grid-column:span 2"><span>Aufgabe</span><input id="tdIn" placeholder="z. B. CT Thorax anmelden" autocomplete="off"></label><label class="fld"><span>Wer</span><input id="tdWho" placeholder="z. B. Pflege 1" autocomplete="off"></label></div>
+ <button class="btn" data-act="tdAdd">+ To Do</button>
+ <div class="list">${S.todo.map((x,i)=>`<div class="li ${x.d?'done':''}"><button data-act="tdTog" data-i="${i}" aria-label="erledigt umschalten" style="font-size:20px">${x.d?'☑':'☐'}</button><span class="x">${esc(x.x)}${x.w?` <span class="tag">${esc(x.w)}</span>`:''}</span><span class="t">${x.d?'✓ '+hm(x.d):hm(x.t)}</span><button data-act="tdDel" data-i="${i}" aria-label="entfernen">×</button></div>`).join('')||'<p class="empty">Keine Aufgaben.</p>'}</div>`,{sub:open?open+' offen':''})}
+</div>`};
+
+V.prot=()=>{const P=buildProt();const framed=isFramed();
+return `<div class="grid">
+${card('','Protokoll',`<div class="pdfbox noprint">
+ <div class="row"><button class="btn red" data-act="pdfMail">PDF per Mail senden</button><button class="btn" data-act="pdfSave">PDF speichern</button><button class="btn ghost" data-act="copy">Text kopieren</button></div>
+ <label class="pchk"><input type="checkbox" id="pdfPseudo" ${CFG.pseudo?'checked':''}> Im PDF statt Nachname nur Initialen verwenden</label>
+ <p class="hint">„PDF per Mail senden“ öffnet am iPhone das Teilen-Menü: dort <b>Mail</b> wählen, das PDF ist angehängt. Am Rechner wird das PDF gespeichert und das Mailprogramm mit Betreff geöffnet; die Datei dann anhängen. Patientendaten nur über die in der Klinik zugelassenen Mailwege versenden.${framed?' <b>In dieser Vorschau sind Teilen und Speichern gesperrt; bitte die App über den GitHub-Link oder die Datei öffnen.</b>':''}</p>
+ <div class="row"><button class="btn ghost small" data-act="reset" style="margin-left:auto">Neuer Fall</button></div></div>
+ <div class="proto">${P.map(s=>`<h4>${esc(s.h)}</h4>${s.l.length?s.l.map(l=>`<p>${esc(l)}</p>`).join(''):'<p class="empty">–</p>'}`).join('')}</div>`)}
+${card('','Maßnahmen & Medikamente',`${S.meds.length?`<div class="list">${S.meds.map((m,i)=>`<div class="li"><span class="t">${hm(m.t)}</span><span class="x">${esc(m.x)}</span><button data-act="medDel" data-i="${i}" aria-label="entfernen">×</button></div>`).join('')}</div>`:'<p class="empty">Noch nichts dokumentiert. „+ Maßnahme“ oben rechts.</p>'}`)}
+${card('','Vitalwerte',vitTable())}
+<p class="foot">Dokumentationshilfe, kein Medizinprodukt. Ersetzt weder ärztliche Entscheidung noch die Dokumentation im KIS. Daten bleiben lokal auf diesem Gerät.</p>
+</div>`};
+
+/* ================= Protokoll ================= */
+function line(k,v){return v?`${k}: ${v}`:null}
+function chkLine(list){return list.filter(([k])=>S.chk[k]).map(([k,t])=>`${hm(S.chk[k])} ${t}`)}
+function initials(n){return String(n||'').trim().split(/[\s-]+/).filter(Boolean).map(w=>w[0].toUpperCase()+'.').join('')}
+function buildProt(o={}){const I=S.sinn.I,secs=[];const add=(h,l)=>secs.push({h,l:l.filter(Boolean)});
+ add('Fall',[line('Erstellt',new Date(S.created).toLocaleString('de-DE')),line('Anmeldung',S.pre.tAnm||hm(S.anmAt)),line('ETA',S.pre.eta),line('Eintreffen',hm(S.arrAt)),line('Übergabe abgeschlossen',hm(S.uebEnd)),line('Rettungsmittel',S.pre.rm),line('Voranmeldung',S.pre.info)]);
+ add('Vorbereitung (PR_ / TTO I)',[...chkLine([...PREP,...PSA,...RES,...TTO1,...FSR]),line('Ersteindruck',S.sinn.ttt)]);
+ add('Übergabe – Identifikation',[line('Name',o.pseudo?initials(I.name):I.name),line('Alter',I.age),line('Geschlecht',I.sex),line('Patient',I.kind),I.wt?`Gewicht: ${I.wt} kg${I.wtType?' ('+I.wtType+')':''}`:null]);
+ add('Übergabe – Notfallereignis',[line('Was',S.sinn.N1.was),line('Wie',S.sinn.N1.wie),line('Wann',S.sinn.N1.wann),line('Wo/Woher',S.sinn.N1.wo)]);
+ const v=S.sinn.v;add('Übergabe – cABCDE / Handlung',[...N2.map(([L,t])=>{const n=S.sinn.N2[L];return (n.f||n.h)?`${L} ${t}: ${n.f||'–'}${n.h?' | Handlung: '+n.h:''}`:null}),
+   [v.spo2&&'SpO₂ '+v.spo2,v.af&&'AF '+v.af,v.hf&&'HF '+v.hf,v.rr&&'RR '+v.rr,v.rekap&&'Rekap '+v.rekap,v.gcs&&'GCS '+v.gcs,v.bz&&'BZ '+v.bz,v.temp&&'Temp '+v.temp].filter(Boolean).join(' · ')||null]);
+ add('Anamnese (SAMPLER)',[line('S Symptome',S.sinn.amp.S),...AMP.map(([k,t])=>line(k+' '+t,S.sinn.amp[k]))]);
+ add('OPQRST',OPQ.map(([k,t])=>line(k+' '+t,S.opq[k])));
+ add('Übergabe – Fazit / Teamfragen',[S.chk.f_done?hm(S.chk.f_done)+' Fazit durchgeführt':null,line('Fazit',S.sinn.fazit),S.chk.t_done?hm(S.chk.t_done)+' Teamfragen durchgeführt':null,line('Teamfragen',S.sinn.team)]);
+ add('Erstversorgung ABCDE',[...PRIM.map(([L,t])=>{const p=S.prim[L];return (p.st||p.f||p.h)?`${L} ${t}: ${p.st||''}${p.f?' – '+p.f:''}${p.h?' | Maßnahme: '+p.h:''}`:null}),...chkLine(MON).map(x=>'Monitoring '+x)]);
+ add('Team-Time-Out II',[S.tto2.at?'Durchgeführt: '+hm(S.tto2.at):null,line('Zustand',S.tto2.zust),line('Priorität',prioTxt()),line('Leitsymptom',leitTxt()),line('Zusammenfassung',S.tto2.note)]);
+ add('Untersuchung / Reassessment',[line('Befund',S.unters),...S.reass.map(r=>hm(r.t)+' Reassessment')]);
+ add('Diagnose',[line('Arbeitsdiagnose',S.dd.ad),...S.dd.list.map(d=>`DD ${d.x} (${d.s})`)]);
+ add('Diagnostik',DIAG.map(([k,t])=>(S.chk[k]||S.diag[k])?`${t}${S.chk[k]?' ('+hm(S.chk[k])+')':''}${S.diag[k]?': '+S.diag[k]:''}`:null));
+ add('Interpretation / TTO III',[S.tto3.at?'Durchgeführt: '+hm(S.tto3.at):null,...chkLine(TTO3),line('Therapieplan',S.tto3.plan),line('Disposition',S.tto3.dispo==='anderes'?S.tto3.dispoFree:S.tto3.dispo)]);
+ add('To Do',S.todo.map(x=>`${x.d?'[x]':'[ ]'} ${x.x}${x.w?' ('+x.w+')':''}${x.d?' – erledigt '+hm(x.d):''}`));
+ add('Maßnahmen & Medikamente',S.meds.map(m=>hm(m.t)+' '+m.x));
+ add('Vitalwerte',S.vit.map(v=>`${hm(v.t)}${v.src?' ['+v.src+']':''}: `+[v.spo2&&'SpO₂ '+v.spo2,v.af&&'AF '+v.af,v.hf&&'HF '+v.hf,v.sys&&'RR '+v.sys+'/'+v.dia,v.rekap&&'Rekap '+v.rekap,v.gcs&&'GCS '+v.gcs,v.bz&&'BZ '+v.bz+' '+(v.bzU||''),v.temp&&'Temp '+v.temp].filter(Boolean).join(' · ')));
+ add('Chronologie',[...S.log].sort((a,b)=>a.t-b.t).map(e=>hms(e.t)+' '+e.x));
+ return secs}
+function protText(){return 'SCHOCKRAUM-PROTOKOLL ((PR_E-)AUD²IT · SINNHAFT)\n'+buildProt().map(s=>'\n== '+s.h.toUpperCase()+' ==\n'+(s.l.join('\n')||'–')).join('\n')+'\n\nDokumentationshilfe, kein Medizinprodukt.'}
+
+/* ================= PDF (offline, ohne Bibliothek) ================= */
+const HW=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const CP={'€':128,'‚':130,'„':132,'…':133,'‹':139,'‘':145,'’':146,'“':147,'”':148,'•':149,'–':150,'—':151,'›':155};
+const REPL={'₂':'2','✓':'v','☑':'[x]','☐':'[ ]','→':'->','①':'1','②':'2','③':'3','≥':'>=','≤':'<=','×':'x'};
+function pdfChars(str){let o=[];for(const ch of String(str)){const r=REPL[ch];if(r!==undefined){for(const c of r)o.push(c.charCodeAt(0));continue}
+  const c=ch.codePointAt(0);if(c<128&&c>=32)o.push(c);else if(CP[ch])o.push(CP[ch]);else if(c>=160&&c<=255&&c!==173)o.push(c);else if(c===9)o.push(32);else o.push(63)}return o}
+function cw(c,bold){const w=(c>=32&&c<=126)?HW[c-32]:556;return bold?w*1.07:w}
+function tw(codes,size,bold){return codes.reduce((a,c)=>a+cw(c,bold),0)*size/1000}
+function wrap(str,size,max,bold){const words=String(str).split(/\s+/);const lines=[];let cur='';
+  for(const w of words){const t=cur?cur+' '+w:w;if(tw(pdfChars(t),size,bold)<=max){cur=t;continue}
+    if(cur)lines.push(cur);cur=w;while(tw(pdfChars(cur),size,bold)>max){let k=cur.length;while(k>1&&tw(pdfChars(cur.slice(0,k)),size,bold)>max)k--;lines.push(cur.slice(0,k));cur=cur.slice(k)}}
+  if(cur)lines.push(cur);return lines.length?lines:['']}
+function pstr(str){return '('+pdfChars(str).map(c=>c===40||c===41||c===92?'\\'+String.fromCharCode(c):c>126?'\\'+c.toString(8).padStart(3,'0'):String.fromCharCode(c)).join('')+')'}
+function makePdf(o){const W=595.28,H=841.89,M=42,MAXW=W-2*M;const pages=[];let ops=[],y=0;
+  const stamp=new Date().toLocaleString('de-DE');
+  const newPage=()=>{if(ops.length)pages.push(ops);ops=[];y=H-M;
+    if(!pages.length){ops.push('0.77 0.13 0.16 rg',`${M} ${y-30} ${MAXW} 34 re f`,'1 1 1 rg',`BT /F2 15 Tf ${M+10} ${y-19} Td ${pstr('Schockraum-Protokoll')} Tj ET`,
+      `BT /F1 8.5 Tf ${M+10} ${y-28} Td ${pstr('(PR_E-)AUD²IT · SINNHAFT-Übergabe · erstellt '+stamp)} Tj ET`);y-=48}
+    else{ops.push('0.4 0.45 0.5 rg',`BT /F1 8 Tf ${M} ${y} Td ${pstr('Schockraum-Protokoll · Fortsetzung')} Tj ET`);y-=18}};
+  const need=h=>{if(y-h<M+24)newPage()};
+  const text=(t,x,size,bold,col)=>{ops.push(col||'0.08 0.13 0.2 rg',`BT /${bold?'F2':'F1'} ${size} Tf ${x.toFixed(1)} ${y.toFixed(1)} Td ${pstr(t)} Tj ET`)};
+  newPage();
+  for(const s of o.secs){if(!s.l.length)continue;need(32);y-=6;text(s.h.toUpperCase(),M,10,true,'0.77 0.13 0.16 rg');y-=4;ops.push('0.77 0.13 0.16 RG 0.6 w',`${M} ${y.toFixed(1)} m ${M+MAXW} ${y.toFixed(1)} l S`);y-=12;
+    for(const l of s.l){const m=/^([^:]{1,34}): (.*)$/.exec(l);let lines,keyW=0;
+      if(m&&s.h!=='Chronologie'){keyW=Math.min(150,tw(pdfChars(m[1]+':'),9,true)+6);lines=wrap(m[2],9,MAXW-keyW,false)}else lines=wrap(l,9,MAXW,false);
+      need(lines.length*12);
+      lines.forEach((ln,i)=>{if(i===0&&keyW)text(m[1]+':',M,9,true,'0.36 0.42 0.5 rg');text(ln,M+keyW,9,false);y-=12})}
+    y-=4}
+  if(ops.length)pages.push(ops);
+  const objs=[];const add=s=>{objs.push(s);return objs.length};
+  const cat=add('<< /Type /Catalog /Pages 2 0 R >>');add('PAGES');
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const kids=[];pages.forEach((p,i)=>{const foot=['0.4 0.45 0.5 rg',`BT /F1 7.5 Tf ${M} 24 Td ${pstr('Dokumentationshilfe, kein Medizinprodukt. Ersetzt nicht die Dokumentation im KIS.')} Tj ET`,`BT /F1 7.5 Tf ${W-M-40} 24 Td ${pstr('Seite '+(i+1)+'/'+pages.length)} Tj ET`];
+    const c=[...p,...foot].join('\n');const ci=add(`<< /Length ${c.length} >>\nstream\n${c}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${ci} 0 R >>`))});
+  objs[1]=`<< /Type /Pages /Kids [${kids.map(k=>k+' 0 R').join(' ')}] /Count ${kids.length} >>`;
+  let out='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';const offs=[];objs.forEach((ob,i)=>{offs.push(out.length);out+=`${i+1} 0 obj\n${ob}\nendobj\n`});
+  const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objs.length+1} /Root ${cat} 0 R >>\nstartxref\n${xr}\n%%EOF`;
+  const b=new Uint8Array(out.length);for(let i=0;i<out.length;i++)b[i]=out.charCodeAt(i)&255;return b}
+function pdfName(){const d=new Date(S.arrAt||S.created);return `SR-Protokoll_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.pdf`}
+async function savePdf(mail){const bytes=makePdf({secs:buildProt({pseudo:CFG.pseudo})});const name=pdfName();
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  if(mail){try{const file=new File([blob],name,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Schockraum-Protokoll',text:'Schockraum-Protokoll '+hm(S.arrAt||S.created)});log('PDF geteilt');return}}
+    catch(e){if(e&&e.name==='AbortError')return}}
+  try{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);log('PDF gespeichert');
+    if(mail){setTimeout(()=>{location.href='mailto:?subject='+encodeURIComponent('Schockraum-Protokoll '+name.replace('.pdf',''))+'&body='+encodeURIComponent('Protokoll als PDF im Anhang ('+name+').')},400);toast('PDF gespeichert – bitte an die Mail anhängen')}else toast('PDF gespeichert: '+name)}
+  catch(e){toast('PDF hier nicht möglich – App über GitHub-Link öffnen')}}
+
+/* ================= Render ================= */
+function isFramed(){try{return window.self!==window.top}catch(e){return true}}
+function done(id){switch(id){case 'pr':return TTO1.every(([k])=>S.chk[k]);case 'ueb':return !!S.uebEnd;case 'e':return PRIM.every(([L])=>S.prim[L].st);case 'tto2':return !!S.tto2.at;case 'aud':return !!S.dd.ad;case 'it':return !!S.tto3.at;default:return false}}
+function renderSteps(){document.getElementById('steps').innerHTML=TABS.map(t=>`<button class="st ${S.tab===t.id?'on':''}" data-tab="${t.id}">${t.l}${done(t.id)?'<span class="dot"></span>':''}<small>${t.s}</small></button>`).join('')}
+function render(){renderSteps();const v=document.getElementById('view');v.innerHTML=V[S.tab]();hydrate(v);updTop()}
+function hydrate(root){
+ root.querySelectorAll('[data-bind]').forEach(el=>{const x=g(el.dataset.bind);el.value=x==null?'':x});
+ root.querySelectorAll('[data-chk]').forEach(el=>{const t=S.chk[el.dataset.chk];el.classList.toggle('on',!!t);el.setAttribute('aria-pressed',!!t);el.querySelector('time').textContent=t?hm(t):''});
+ root.querySelectorAll('[data-seg]').forEach(el=>{const x=g(el.dataset.seg);el.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.val===x);b.setAttribute('aria-pressed',b.dataset.val===x)})});
+}
+function setPill(id,txt,cls){const e=document.getElementById(id);e.textContent=txt;e.className='pill '+(cls||'')}
+function updTop(){const z=S.tto2.zust;setPill('pZust',z?z.toUpperCase():'Zustand offen',z==='kritisch'?'krit':z==='stabil'?'stab':'ghost');
+ const l=leitTxt();setPill('pLeit',l?'LS: '+l:'Leitsymptom –',l?'':'ghost');
+ const pr=S.tto2.prio;setPill('pPrio',pr.length?'Prio '+prioTxt()+(pr.length<5?' ('+pr.length+'/5)':''):'Prio –',pr.length===5?'':'ghost');
+ const I=S.sinn.I;setPill('pKg',I.wt?`${I.wt} kg${I.wtType?' '+(I.wtType==='gemessen'?'gem.':'gesch.'):''}${I.kind==='Kind'?' · Kind':''}`:'kg –',I.wt?'':'ghost');tick()}
+function tick(){const now=Date.now();
+ const a=document.querySelector('#tmA b'),e=document.querySelector('#tmE b'),s=document.querySelector('#tmS b'),te=document.getElementById('tmE');
+ a.textContent=S.anmAt?dur(now-S.anmAt):'--:--';
+ if(S.etaAt&&!S.arrAt){const d=S.etaAt-now;e.textContent=(d<0?'+':'')+dur(Math.abs(d));te.classList.toggle('warn',d<0);te.querySelector('span').textContent=d<0?'ETA überschritten':'bis ETA'}
+ else{e.textContent=S.pre.eta||'--:--';te.classList.remove('warn');te.querySelector('span').textContent='ETA'}
+ s.textContent=S.arrAt?dur(now-S.arrAt):'--:--';
+ const pv=document.getElementById('pVit');if(S.vit.length){const m=Math.floor((now-S.vit[S.vit.length-1].t)/60000);pv.hidden=false;pv.textContent='Vitalwerte vor '+m+' min';pv.className='pill ghost'}else pv.hidden=true}
+setInterval(tick,1000);
+
+/* ================= Interaktion ================= */
+function timeToday(hhmm){if(!/^\d{1,2}:\d{2}$/.test(hhmm||''))return null;const [h,m]=hhmm.split(':').map(Number);const d=new Date();d.setHours(h,m,0,0);
+ if(d.getTime()-Date.now()>12*3600e3)d.setDate(d.getDate()-1);return d.getTime()}
+document.addEventListener('input',ev=>{const el=ev.target;if(!el.dataset||!el.dataset.bind)return;const p=el.dataset.bind;sv(p,el.value);
+ // gleiche Bindung an anderer Stelle (z. B. AMPLER in Übergabe und AUD²) synchron halten
+ document.querySelectorAll(`[data-bind="${p}"]`).forEach(o=>{if(o!==el)o.value=el.value});
+ if(p==='pre.eta'){S.etaAt=timeToday(el.value);save()}
+ if(p==='pre.tAnm'){const t=timeToday(el.value);if(t){S.anmAt=t;save()}}
+ if(p.startsWith('sinn.I')||p.startsWith('tto2'))updTop()});
+document.addEventListener('change',ev=>{const el=ev.target;if(el.id==='pdfPseudo'){CFG.pseudo=el.checked;saveCfg();return}if(el.dataset&&el.dataset.bind&&el.value&&/\.(f|h)$|^(unters|tto3\.plan|sinn\.fazit)$/.test(el.dataset.bind)){/* Freitext wird nicht einzeln geloggt */}});
+document.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;
+ if(b.dataset.tab){S.tab=b.dataset.tab;save();render();window.scrollTo(0,0);return}
+ if(b.dataset.chk){const k=b.dataset.chk;if(S.chk[k]){delete S.chk[k];log((ALLCHK[k]||k)+' – zurückgenommen')}else{S.chk[k]=Date.now();log(ALLCHK[k]||k)}save();hydrate(b.parentElement.parentElement||document);renderSteps();return}
+ const sg=b.closest('[data-seg]');if(sg&&b.dataset.val!=null){const p=sg.dataset.seg;const val=g(p)===b.dataset.val?'':b.dataset.val;sv(p,val);
+   const names={'tto2.zust':'Zustand','tto2.prio':'Priorität','tto2.leit':'Leitsymptom','tto3.dispo':'Disposition'};
+   if(names[p])log(names[p]+': '+(val||'zurückgesetzt'));else if(p.startsWith('prim.')&&val)log('Primary survey '+p.split('.')[1]+': '+val);
+   hydrate(sg.parentElement);updTop();
+   if(p==='tto2.leit'){const w=document.getElementById('leitFreeWrap');if(w)w.hidden=val!=='anderes'}
+   if(p==='tto3.dispo'){const w=document.getElementById('dispoFreeWrap');if(w)w.hidden=val!=='anderes'}
+   if(p.startsWith('prim.'))renderSteps();return}
+ const a=b.dataset.act;if(!a)return;const i=+b.dataset.i;
+ ({
+  anmNow(){S.anmAt=Date.now();S.pre.tAnm=hm(S.anmAt);log('Voranmeldung');save();render()},
+  arrive(){if(S.arrAt){askTime('Eintreffzeit korrigieren',S.arrAt,t=>{S.arrAt=t;log('Eintreffzeit korrigiert auf '+hm(t));save();render()});return}
+    S.arrAt=Date.now();if(!S.anmAt)S.anmAt=S.arrAt;log('Patient eingetroffen');S.tab='ueb';save();render();window.scrollTo(0,0)},
+  uebEnd(){if(!S.uebEnd){S.uebEnd=Date.now();const v=S.sinn.v;const rr=(v.rr||'').split('/');
+     if(Object.values(v).some(x=>x)){S.vit.push({t:S.uebEnd,src:'Übergabe RD',spo2:v.spo2,af:v.af,hf:v.hf,sys:rr[0]||'',dia:rr[1]||'',rekap:v.rekap,gcs:v.gcs,bz:v.bz,bzU:'',temp:v.temp})}
+     log('Übergabe abgeschlossen');if(!S.arrAt)S.arrAt=S.uebEnd}
+    S.tab='e';save();render();window.scrollTo(0,0)},
+  goto(){S.tab=b.dataset.to;save();render();window.scrollTo(0,0)},
+  prio(){const L=b.dataset.l,pr=S.tto2.prio,k=pr.indexOf(L);if(k>=0)pr.splice(k,1);else pr.push(L);if(pr.length===5)log('Priorität: '+prioTxt());save();render()},
+  prioSugg(){S.tto2.prio=suggOrder();log('Priorität (Vorschlag übernommen): '+prioTxt());save();render()},
+  prioClr(){S.tto2.prio=[];log('Priorität zurückgesetzt');save();render()},
+  leit(){const v=b.dataset.v,l=S.tto2.leit,k=l.indexOf(v);if(k>=0){l.splice(k,1);log('Leitsymptom entfernt: '+v)}else{if(l.length>=2){toast('Maximal zwei Leitsymptome – erst eines abwählen');return}l.push(v);log('Leitsymptom: '+v)}save();render()},
+  tto2done(){if(S.tto2.prio.length<5){toast('Priorisierung unvollständig: alle fünf Buchstaben A–E in Reihenfolge wählen');document.querySelector('.prioline')?.scrollIntoView({block:'center'});return}
+    if(!S.tto2.leit.length){toast('Bitte mindestens ein Leitsymptom wählen');return}
+    S.tto2.at=Date.now();log(`TTO II: ${S.tto2.zust||'Zustand offen'} · Prio ${prioTxt()} · Leitsymptom ${leitTxt()}`);S.tab='aud';save();render();window.scrollTo(0,0)},
+  tto3done(){S.tto3.at=Date.now();log('TTO III durchgeführt'+(S.dd.ad?' · AD: '+S.dd.ad:''));save();render()},
+  vitals(){vitSheet()},
+  reass(){vitSheet('Reassessment')},
+  measure(){measureSheet()},
+  delVit(){S.vit.splice(i,1);log('Vitalwert-Eintrag gelöscht');save();render()},
+  ddAdd(){const el=document.getElementById('ddIn');const x=el.value.trim();if(!x)return;S.dd.list.push({x,s:'offen'});log('DD: '+x);save();render()},
+  ddSt(){const o=['offen','wahrscheinlich','bestätigt','ausgeschlossen'];const d=S.dd.list[i];d.s=o[(o.indexOf(d.s)+1)%o.length];log(`DD ${d.x}: ${d.s}`);save();render()},
+  ddDel(){S.dd.list.splice(i,1);save();render()},
+  tdAdd(){const x=document.getElementById('tdIn').value.trim();if(!x)return;const w=document.getElementById('tdWho').value.trim();S.todo.push({x,w,t:Date.now(),d:null});log('To Do: '+x+(w?' ('+w+')':''));save();render()},
+  tdTog(){const x=S.todo[i];x.d=x.d?null:Date.now();log('To Do '+(x.d?'erledigt':'wieder offen')+': '+x.x);save();render()},
+  tdDel(){S.todo.splice(i,1);save();render()},
+  medDel(){const m=S.meds.splice(i,1)[0];log('Maßnahme gelöscht: '+(m&&m.x));save();render()},
+  copy(){const t=protText();const ok=()=>toast('Protokoll kopiert');
+    try{navigator.clipboard.writeText(t).then(ok,()=>fallbackCopy(t))}catch(e){fallbackCopy(t)}},
+  dl(){try{const blob=new Blob([protText()],{type:'text/plain;charset=utf-8'});const u=URL.createObjectURL(blob);const x=document.createElement('a');x.href=u;x.download='Schockraum-Protokoll_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.txt';document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}catch(e){toast('Speichern hier nicht möglich – bitte „Text kopieren“')}},
+  print(){window.print()},
+  pdfSave(){savePdf(false)},
+  pdfMail(){savePdf(true)},
+  reset(){confirmSheet('Neuen Fall beginnen?','Alle Eingaben dieses Falls werden auf diesem Gerät gelöscht. Vorher ggf. das Protokoll kopieren.','Fall löschen',()=>{S=blank();try{localStorage.removeItem(KEY)}catch(e){}render();toast('Neuer Fall angelegt')})}
+ })[a]?.();
+});
+function fallbackCopy(t){sheet(`<h2>Protokoll</h2><p class="hint">Kopieren wird hier blockiert. Text markieren und manuell kopieren.</p><textarea id="cpTa" style="width:100%;min-height:50vh;font:13px var(--mono)">${esc(t)}</textarea><button class="btn" data-close>Schließen</button>`);const ta=document.getElementById('cpTa');ta.focus();ta.select()}
+
+/* ================= Sheets ================= */
+function sheet(html,onOpen){const L=document.getElementById('layer');L.innerHTML=`<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+ const bg=L.firstChild;bg.addEventListener('click',e=>{if(e.target===bg||e.target.closest('[data-close]'))closeSheet()});onOpen&&onOpen(bg);const f=bg.querySelector('input,textarea');if(f)setTimeout(()=>f.focus(),50)}
+function closeSheet(){document.getElementById('layer').innerHTML=''}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+function confirmSheet(title,text,okLbl,fn){sheet(`<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="row"><button class="btn ghost" data-close>Abbrechen</button><button class="btn red" id="okB">${esc(okLbl)}</button></div>`,bg=>bg.querySelector('#okB').onclick=()=>{closeSheet();fn()})}
+function askTime(title,cur,fn){sheet(`<h2>${esc(title)}</h2><label class="fld"><span>Uhrzeit</span><input id="atIn" type="time" value="${hm(cur)}"></label><div class="row"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="okB">Übernehmen</button></div>`,
+ bg=>bg.querySelector('#okB').onclick=()=>{const t=timeToday(bg.querySelector('#atIn').value);if(t){closeSheet();fn(t)}})}
+
+const PLAUS={spo2:[0,100],af:[0,80],hf:[0,300],sys:[0,300],dia:[0,250],rekap:[0,20],gcs:[3,15],temp:[15,45]};
+function vitSheet(kind){const f=(id,l,ph)=>`<label class="fld"><span>${l}</span><input id="v_${id}" inputmode="decimal" placeholder="${ph||''}" autocomplete="off"></label>`;
+ sheet(`<h2>${kind?'Reassessment · ':''}Vitalwerte · ${hm(Date.now())}</h2>
+ <div class="vit">${f('spo2','SpO₂ %')}${f('af','AF /min')}${f('hf','HF /min')}${f('sys','RR sys')}${f('dia','RR dia')}${f('rekap','Rekap s')}${f('gcs','GCS')}${f('bz','BZ')}${f('temp','Temp °C')}</div>
+ <div class="fld"><span>BZ-Einheit</span><div class="seg" id="bzU"><button data-u="mg/dl" class="on">mg/dl</button><button data-u="mmol/l">mmol/l</button></div></div>
+ ${kind?`<label class="fld"><span>Notiz zum Reassessment</span><input id="v_note" autocomplete="off"></label>`:''}
+ <div id="vWarn"></div>
+ <div class="row"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="vSave">Speichern</button></div>`,bg=>{
+  let unit='mg/dl',forced=false;
+  bg.querySelector('#bzU').onclick=e=>{const b=e.target.closest('button');if(!b)return;unit=b.dataset.u;bg.querySelectorAll('#bzU button').forEach(x=>x.classList.toggle('on',x===b))};
+  bg.querySelector('#vSave').onclick=()=>{const val=k=>bg.querySelector('#v_'+k).value.trim().replace(',','.');
+   const o={t:Date.now(),src:kind||'',spo2:val('spo2'),af:val('af'),hf:val('hf'),sys:val('sys'),dia:val('dia'),rekap:val('rekap'),gcs:val('gcs'),bz:val('bz'),bzU:'',temp:val('temp')};
+   if(o.bz)o.bzU=unit;
+   const issues=[];bg.querySelectorAll('.vit input').forEach(x=>x.classList.remove('bad'));
+   for(const k in PLAUS){if(o[k]==='')continue;const n=Number(o[k]);if(isNaN(n)||n<PLAUS[k][0]||n>PLAUS[k][1]){issues.push(k);bg.querySelector('#v_'+k).classList.add('bad')}}
+   if(o.gcs&&!/^\d+$/.test(o.gcs)){issues.push('gcs');bg.querySelector('#v_gcs').classList.add('bad')}
+   if(o.bz){const n=Number(o.bz);const r=unit==='mg/dl'?[5,2000]:[0.3,111];if(isNaN(n)||n<r[0]||n>r[1]){issues.push('bz');bg.querySelector('#v_bz').classList.add('bad')}}
+   if(o.sys&&o.dia&&Number(o.dia)>=Number(o.sys)){issues.push('rr');bg.querySelector('#v_dia').classList.add('bad')}
+   const any=['spo2','af','hf','sys','rekap','gcs','bz','temp'].some(k=>o[k]!=='');
+   if(!any&&!kind){bg.querySelector('#vWarn').innerHTML='<div class="warnbox">Bitte mindestens einen Wert eintragen.</div>';return}
+   if(issues.includes('gcs')){bg.querySelector('#vWarn').innerHTML='<div class="warnbox">GCS muss eine ganze Zahl von 3 bis 15 sein.</div>';return}
+   if(issues.length&&!forced){forced=true;bg.querySelector('#vWarn').innerHTML='<div class="warnbox">Rot markierte Werte sind technisch unplausibel (Tippfehler?). Korrigieren oder nochmals „Speichern“ tippen, um sie trotzdem zu übernehmen.</div>';return}
+   if(any)S.vit.push(o);
+   if(kind){const note=(bg.querySelector('#v_note')||{}).value||'';S.reass.push({t:o.t,x:'Reassessment'+(note?': '+note:'')});log('Reassessment'+(note?': '+note:''))}
+   if(any)log('Vitalwerte: '+[o.spo2&&'SpO₂ '+o.spo2,o.af&&'AF '+o.af,o.hf&&'HF '+o.hf,o.sys&&'RR '+o.sys+'/'+o.dia,o.rekap&&'Rekap '+o.rekap,o.gcs&&'GCS '+o.gcs,o.bz&&'BZ '+o.bz+' '+o.bzU,o.temp&&'Temp '+o.temp].filter(Boolean).join(' · '));
+   save();closeSheet();render();toast('Gespeichert')}})}
+
+function measureSheet(){const recent=[...new Set(S.meds.map(m=>m.x))].slice(-6).reverse();
+ sheet(`<h2>Maßnahme / Medikament · ${hm(Date.now())}</h2>
+ <label class="fld"><span>Was (inkl. Dosis, Weg)</span><input id="mIn" placeholder="z. B. 2 l Sauerstoff über Nasenbrille" autocomplete="off"></label>
+ <label class="fld"><span>Uhrzeit (leer = jetzt)</span><input id="mT" type="time"></label>
+ ${recent.length?`<div class="fld"><span>Zuletzt verwendet</span><div class="seg">${recent.map(r=>`<button data-r="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>`:''}
+ <div class="row"><button class="btn ghost" data-close>Abbrechen</button><button class="btn red" id="mSave">Dokumentieren</button></div>`,bg=>{
+  bg.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{bg.querySelector('#mIn').value=b.dataset.r});
+  const go=()=>{const x=bg.querySelector('#mIn').value.trim();if(!x){bg.querySelector('#mIn').classList.add('bad');return}const t=timeToday(bg.querySelector('#mT').value)||Date.now();
+   S.meds.push({t,x});S.meds.sort((a,b)=>a.t-b.t);S.log.push({t,x:'Maßnahme: '+x});save();closeSheet();render();toast('Dokumentiert: '+x)};
+  bg.querySelector('#mSave').onclick=go;bg.querySelector('#mIn').onkeydown=e=>{if(e.key==='Enter')go()}})}
+
+/* Wake Lock: Display bleibt an, solange die Seite sichtbar ist */
+async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',wake);
+
+load();norm();render();wake();
+</script>
+</body></html>
