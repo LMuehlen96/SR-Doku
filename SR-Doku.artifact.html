@@ -122,6 +122,10 @@ h3{margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.07em;c
 .abcrow .ltr.c{font-size:24px}
 .abcin{display:grid;gap:8px;min-width:0}
 .abct{font-weight:800}
+.mq{display:grid;gap:8px;max-height:46vh;overflow:auto;padding-right:2px}
+.mgrp{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start}
+.mgrp .ltr{font-size:22px;padding-top:6px}
+.mq .seg button{min-height:38px;padding:6px 11px;font-size:14px}
 .pdfbox{display:grid;gap:8px;background:var(--surface2);border:1.5px solid var(--line);border-radius:9px;padding:10px}
 .pchk{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}.pchk input{width:20px;height:20px}
 .h3n{text-transform:none;letter-spacing:0;font-weight:500}
@@ -603,16 +607,28 @@ function vitSheet(kind){const f=(id,l,ph)=>`<label class="fld"><span>${l}</span>
    if(any)log('Vitalwerte: '+[o.spo2&&'SpO₂ '+o.spo2,o.af&&'AF '+o.af,o.hf&&'HF '+o.hf,o.sys&&'RR '+o.sys+'/'+o.dia,o.rekap&&'Rekap '+o.rekap,o.gcs&&'GCS '+o.gcs,o.bz&&'BZ '+o.bz+' '+o.bzU,o.temp&&'Temp '+o.temp].filter(Boolean).join(' · '));
    save();closeSheet();render();toast('Gespeichert')}})}
 
+const MEAS=[
+ ['A','Atemweg',['Absaugen','Guedel-Tubus','Wendl-Tubus','Larynxmaske','Intubation (RSI)','HWS-Immobilisation']],
+ ['B','Atmung',['O₂ Nasenbrille','O₂ Maske mit Reservoir','NIV','Beutel-Masken-Beatmung','Entlastungspunktion','Thoraxdrainage']],
+ ['C','Kreislauf',['pVK','i.o.-Zugang','Arterie','ZVK','Volumen kristalloid','Blutprodukte','Tourniquet','Beckenschlinge','Katecholamin-Perfusor','Kardioversion / Defibrillation']],
+ ['D','Neurologie',['BZ-Messung','Glukose','Antikonvulsivum']],
+ ['E','Exposure',['Wärmeerhalt','Wundversorgung','Blasenkatheter','Magensonde']],
+ ['M','Medikamente',['Analgesie','Sedierung','Antiemese','Antibiose']]];
 function measureSheet(){const recent=[...new Set(S.meds.map(m=>m.x))].slice(-6).reverse();
- sheet(`<h2>Maßnahme / Medikament · ${hm(Date.now())}</h2>
- <label class="fld"><span>Was (inkl. Dosis, Weg)</span><input id="mIn" placeholder="z. B. 2 l Sauerstoff über Nasenbrille" autocomplete="off"></label>
- <label class="fld"><span>Uhrzeit (leer = jetzt)</span><input id="mT" type="time"></label>
- ${recent.length?`<div class="fld"><span>Zuletzt verwendet</span><div class="seg">${recent.map(r=>`<button data-r="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>`:''}
+ sheet(`<h2>Maßnahme / Medikament</h2>
+ <div class="mq">${MEAS.map(([L,t,xs])=>`<div class="mgrp"><span class="ltr" title="${t}">${L}</span><div class="seg">${xs.map(x=>`<button data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>`).join('')}</div>
+ ${recent.length?`<div class="fld"><span>Zuletzt verwendet</span><div class="seg">${recent.map(r=>`<button data-q="${esc(r)}" data-full="1">${esc(r)}</button>`).join('')}</div></div>`:''}
+ <label class="fld"><span>Was – Details ergänzen (Dosis, Weg, Lage …)</span><input id="mIn" placeholder="Schnellauswahl antippen oder frei eingeben" autocomplete="off"></label>
+ <div class="fld"><span>Uhrzeit</span><div class="row" style="flex-wrap:nowrap"><input id="mT" type="time" style="flex:1"><button class="btn" id="mNow" type="button">Jetzt</button></div><span class="hint" id="mTh">Leer = Zeitpunkt des Speicherns</span></div>
  <div class="row"><button class="btn ghost" data-close>Abbrechen</button><button class="btn red" id="mSave">Dokumentieren</button></div>`,bg=>{
-  bg.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{bg.querySelector('#mIn').value=b.dataset.r});
-  const go=()=>{const x=bg.querySelector('#mIn').value.trim();if(!x){bg.querySelector('#mIn').classList.add('bad');return}const t=timeToday(bg.querySelector('#mT').value)||Date.now();
-   S.meds.push({t,x});S.meds.sort((a,b)=>a.t-b.t);S.log.push({t,x:'Maßnahme: '+x});save();closeSheet();render();toast('Dokumentiert: '+x)};
-  bg.querySelector('#mSave').onclick=go;bg.querySelector('#mIn').onkeydown=e=>{if(e.key==='Enter')go()}})}
+  const inp=bg.querySelector('#mIn'),tm=bg.querySelector('#mT');
+  bg.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{bg.querySelectorAll('[data-q]').forEach(x=>x.classList.toggle('on',x===b));
+    inp.value=b.dataset.full?b.dataset.q:b.dataset.q+' ';inp.classList.remove('bad');inp.focus();try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}});
+  const setNow=()=>{tm.value=hm(Date.now());bg.querySelector('#mTh').textContent='Jetzt gesetzt: '+tm.value};
+  bg.querySelector('#mNow').onclick=setNow;
+  const go=()=>{const x=inp.value.trim();if(!x){inp.classList.add('bad');return}const t=timeToday(tm.value)||Date.now();
+   S.meds.push({t,x});S.meds.sort((a,b)=>a.t-b.t);S.log.push({t,x:'Maßnahme: '+x});save();closeSheet();render();toast('Dokumentiert: '+hm(t)+' '+x)};
+  bg.querySelector('#mSave').onclick=go;inp.onkeydown=e=>{if(e.key==='Enter')go()}})}
 
 /* Wake Lock: Display bleibt an, solange die Seite sichtbar ist */
 async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen')}catch(e){}}
