@@ -10,9 +10,8 @@ Live-URL in Safari öffnen → Teilen → **„Zum Home-Bildschirm“**. Alle Fa
 ## Umfang
 Voranmeldung & TTO I · SINNHAFT-Übergabe (N cABCDE / H Handlung) · Primary survey ABCDE mit Monitoring · TTO II (bis zu zwei Leitsymptome, vollständige ABCDE-Priorisierung) · AUD² (SAMPLER, OPQRST, Reassessment, DD, Diagnostik) · TTO III & To Do · Protokoll mit offline erzeugtem PDF (Teilen per Mail, optional nur Initialen).
 
-## Dateien
-- `index.html` – GitHub-Pages-Version (vollständiges HTML-Dokument mit Icon-/Manifest-Links)
-- `SR-Doku.artifact.html` – Quelltext ohne Dokumentrahmen (Artefakt-Version)
+## Zugang
+Die App ist **nicht freigegeben** und passwortgeschützt. `index.html` enthält nur eine Sperrseite und die mit AES-256-GCM verschlüsselte App (Schlüssel per PBKDF2-SHA256 aus dem Passwort). Der Quelltext der App liegt nicht im Klartext in diesem Repository. Das Passwort erhalten berechtigte Instruktor:innen über die AG Schockraum.
 
 ## Wichtiger Hinweis
 Prototyp – **kein Medizinprodukt**. Ersetzt weder ärztliche Entscheidung noch die Dokumentation im KIS. Versand von Patientendaten per Mail nur über klinikintern zugelassene Wege.
