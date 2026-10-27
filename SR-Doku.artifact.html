@@ -171,6 +171,11 @@ h3{margin:4px 0 0;font-size:11.5px;font-weight:850;text-transform:uppercase;lett
 .abcrow .ltr.c{font-size:22px;text-transform:lowercase}
 .abcin{display:grid;gap:9px;min-width:0}
 .abct{font-weight:850}
+.seg.leit button{display:inline-flex;align-items:center;gap:8px}
+.lsdot{width:12px;height:12px;border-radius:3px;background:var(--ls);flex:0 0 12px}
+.seg.leit button.on{background:var(--ls);border-color:var(--ls);color:#fff;box-shadow:0 6px 16px -8px var(--ls)}
+.seg.leit button.on .lsdot{background:#fff}
+.lsb{display:inline-block;background:var(--ls);color:#fff;font-weight:800;border-radius:6px;padding:2px 9px;margin:1px 2px}
 .abct small{font-weight:600;color:var(--muted)}
 @media (min-width:820px){.abcin.split{grid-template-columns:1fr 1fr}}
 .hl{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:4px;background:var(--red);color:#fff;font-weight:900;font-size:11px;margin-right:4px;vertical-align:-3px}
@@ -306,7 +311,8 @@ const blank=()=>({v:1,created:Date.now(),tab:'pr',
 let S;const CKEY='srdoku_cfg';let CFG={pseudo:true};try{Object.assign(CFG,JSON.parse(localStorage.getItem(CKEY)||'{}'))}catch(e){}
 function saveCfg(){try{localStorage.setItem(CKEY,JSON.stringify(CFG))}catch(e){}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=merge(blank(),o);return}}catch(e){}S=blank()}
-function norm(){const t=S.tto2;if(!Array.isArray(t.leit))t.leit=t.leit?[t.leit]:[];if(!Array.isArray(t.prio))t.prio=t.prio?[t.prio]:[]}
+function norm(){const t=S.tto2;if(!Array.isArray(t.leit))t.leit=t.leit?[t.leit]:[];
+ const MAP={'Bauchschmerz':'Akutes Abdomen','Vigilanzminderung':'Vigilanzminderung / Fokalneurologisches Defizit'};t.leit=t.leit.map(l=>MAP[l]||l).filter((l,i,a)=>a.indexOf(l)===i);if(!Array.isArray(t.prio))t.prio=t.prio?[t.prio]:[]}
 function merge(a,b){for(const k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k]))merge(a[k],b[k]);else a[k]=b[k]}return a}
 let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},150)}
 function g(p){return p.split('.').reduce((o,k)=>o==null?undefined:o[k],S)}
@@ -328,7 +334,13 @@ const N2=[['c','kritische Blutung',[]],['A','Atemweg',[]],['B','Atmung / Oxygeni
 const AMP=[['A','Allergien'],['M','Medikamente'],['P','Vorgeschichte'],['L','Letzte orale Aufnahme'],['E','vorherige Ereignisse'],['R','Risikofaktoren']];
 const PRIM=[['A','Airway','freie Atemwege'],['B','Breathing','Oxygenierung / Ventilation'],['C','Circulation','Hämodynamik'],['D','Disability','Vigilanz'],['E','Exposure & Environment','Entkleiden, Inspektion und Wärmemanagement']];
 const MON=[['m_spo2','① SpO₂'],['m_ekg','② EKG'],['m_nibd','③ NIBD'],['m_temp','Temp.'],['m_lab','Labor'],['m_bga','Venöse BGA']];
-const LEIT=['Dyspnoe','Schock','Vigilanzminderung','Thoraxschmerz','Bauchschmerz','anderes'];
+/* Leitsymptome nach ACiLS (Vortrag Leitsymptome, Folie 4) mit den Farben der LOD-Karten.
+   Sepsis, Intoxikation und Endokrinologie sind Taschenkarten, keine Leitsymptome. */
+const LS_VIG='Vigilanzminderung / Fokalneurologisches Defizit';
+const LSC={'Dyspnoe':'#4773b8','Schock':'#e51c1f','Thoraxschmerz':'#ed7c34','Akutes Abdomen':'#81b942',[LS_VIG]:'#9e67a9','anderes':'#6b778c'};
+const LEIT=['Dyspnoe','Schock','Thoraxschmerz','Akutes Abdomen',LS_VIG,'anderes'];
+const lsName=l=>l==='anderes'?(S.tto2.leitFree||'anderes'):l;
+function lsBadges(){return (S.tto2.leit||[]).map(l=>`<span class="lsb" style="--ls:${LSC[l]||'#6b778c'}">${esc(lsName(l))}</span>`).join(' ')}
 const OPQ=[['O','Onset – Beginn'],['P','Provocation / Palliation'],['Q','Quality – Qualität'],['R','Radiation – Ausstrahlung'],['S','Severity – Stärke (NRS)'],['T','Time – Zeitverlauf']];
 const DIAG=[['d_lab','Labor'],['d_bga','BGA'],['d_ekg','12-Kanal-EKG'],['d_sono','Sonographie / POCUS'],['d_rx','Röntgen'],['d_ct','CT'],['d_more','Weitere']];
 const TTO3=[['t3_bef','Befunde gesammelt'],['t3_prio','Priorisierung / Arbeitsdiagnose'],['t3_diag','Planung weitere Diagnostik'],['t3_verl','Planung Verlegung / Disposition'],['t3_ang','Information an Angehörige']];
@@ -428,7 +440,8 @@ ${card('–','Team-Time-Out II',`
  <div class="row"><button class="btn ghost small" data-act="prioSugg">Vorschlag übernehmen</button><button class="btn ghost small" data-act="prioClr">Reihenfolge zurücksetzen</button></div>
  <p class="hint">${probs.length?'Als Problem markiert: <b>'+probs.map(p=>p[0]).join(', ')+'</b>. ':'In der Erstversorgung ist noch kein Buchstabe als Problem markiert. '}Vorschlag: <b>${suggOrder().join(' › ')}</b> (Problem-Buchstaben zuerst, dann in ABCDE-Reihenfolge; orange = nächster Vorschlag). Erneutes Antippen entfernt einen Buchstaben.</p>
  <h3>Formuliere Leitsymptom <span class="h3n">– bis zu zwei</span></h3>
- <div class="seg">${LEIT.map(l=>{const on=S.tto2.leit.includes(l);return `<button data-act="leit" data-v="${l}" class="${on?'on':''}" aria-pressed="${on}">${l}</button>`}).join('')}</div>
+ <div class="seg leit">${LEIT.map(l=>{const on=S.tto2.leit.includes(l);return `<button data-act="leit" data-v="${l}" class="${on?'on':''}" aria-pressed="${on}" style="--ls:${LSC[l]}"><i class="lsdot"></i>${l}</button>`}).join('')}</div>
+ <p class="hint">Sepsis, Intoxikation und Endokrinologie sind nach ACiLS Taschenkarten, keine Leitsymptome.</p>
  <div id="leitFreeWrap" ${S.tto2.leit.includes('anderes')?'':'hidden'}>${fld('tto2.leitFree','Leitsymptom (Freitext)')}</div>
  ${fld('tto2.note','Kurzzusammenfassung SR-Leitung',{ta:1})}
  <button class="btn red big-go" data-act="tto2done">${S.tto2.at?'TTO II durchgeführt um '+hm(S.tto2.at)+' · erneut':'TTO II durchgeführt → AUD²'}</button>`,{c:'red'})}
@@ -441,7 +454,7 @@ ${card('U','Untersuchung & Reassessment',`${fld('unters','Untersuchungsbefund',{
  <div class="row"><button class="btn" data-act="reass">Reassessment dokumentieren</button><span class="hint">Öffnet die Vitalwerte und vermerkt das Reassessment in der Chronologie.</span></div>
  ${S.reass.length?`<div class="list">${S.reass.map(r=>`<div class="li"><span class="t">${hm(r.t)}</span><span class="x">${esc(r.x||'Reassessment')}</span></div>`).join('')}</div>`:''}`)}
 <div class="grid two">
-${card('D','Differentialdiagnose',`<p class="hint">Leitsymptom: <b>${esc(leitTxt()||'– (in TTO II festlegen)')}</b></p>
+${card('D','Differentialdiagnose',`<p class="hint">Leitsymptom: ${S.tto2.leit.length?lsBadges():'<b>– (in TTO II festlegen)</b>'}</p>
  ${fld('dd.ad','Arbeitsdiagnose')}
  <div class="row"><div class="fld" style="flex:1"><span>Differentialdiagnose hinzufügen</span><input id="ddIn" placeholder="z. B. Lungenarterienembolie" autocomplete="off"></div><button class="btn" data-act="ddAdd" style="align-self:end">+</button></div>
  <div class="list">${S.dd.list.map((d,i)=>`<div class="li"><span class="x">${esc(d.x)}</span>
@@ -566,7 +579,10 @@ function hydrate(root){
 }
 function setPill(id,txt,cls){const e=document.getElementById(id);e.textContent=txt;e.className='pill '+(cls||'')}
 function updTop(){const z=S.tto2.zust;setPill('pZust',z?z.toUpperCase():'Zustand offen',z==='kritisch'?'krit':z==='stabil'?'stab':'ghost');
- const l=leitTxt();setPill('pLeit',l?'LS: '+l:'Leitsymptom –',l?'':'ghost');
+ {const e=document.getElementById('pLeit');const L=S.tto2.leit||[];
+  if(!L.length){e.textContent='Leitsymptom –';e.className='pill ghost';e.style.background=''}
+  else{const c=L.map(x=>LSC[x]||'#6b778c');e.textContent='LS: '+L.map(x=>x===LS_VIG?'Vigilanz/Fokalneuro':lsName(x)).join(' + ');e.className='pill';
+   e.style.background=c.length>1?`linear-gradient(90deg,${c[0]} 0 50%,${c[1]} 50% 100%)`:c[0]}}
  const pr=S.tto2.prio;setPill('pPrio',pr.length?'Prio '+prioTxt()+(pr.length<5?' ('+pr.length+'/5)':''):'Prio –',pr.length===5?'':'ghost');
  const I=S.sinn.I;setPill('pKg',I.wt?`${I.wt} kg${I.wtType?' '+(I.wtType==='gemessen'?'gem.':'gesch.'):''}${I.kind==='Kind'?' · Kind':''}`:'kg –',I.wt?'':'ghost');tick()}
 function tick(){const now=Date.now();
