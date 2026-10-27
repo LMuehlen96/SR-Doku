@@ -123,6 +123,11 @@ h3{margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.07em;c
 .abcrow .ltr.c{font-size:24px}
 .abcin{display:grid;gap:8px;min-width:0}
 .abct{font-weight:800}
+.accp{display:grid;gap:8px;border:2px solid var(--blue);border-radius:10px;padding:10px;background:var(--bluesoft)}
+.acch{font-weight:800}
+.accp .seg button{min-height:40px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px}
+.accp .seg button small{font-weight:600;opacity:.8}
+.cdot{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(0,0,0,.35);display:inline-block;flex:0 0 14px}
 .mq{display:grid;gap:8px;max-height:46vh;overflow:auto;padding-right:2px}
 .mgrp{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start}
 .mgrp .ltr{font-size:22px;padding-top:6px}
@@ -615,16 +620,39 @@ const MEAS=[
  ['D','Neurologie',['BZ-Messung','Glukose','Antikonvulsivum']],
  ['E','Exposure',['Wärmeerhalt','Wundversorgung','Blasenkatheter','Magensonde']],
  ['M','Medikamente',['Analgesie','Sedierung','Antiemese','Antibiose']]];
+/* Zugänge: Größe/Farbe (pVK nach ISO-10555-Farbcode, i.o. nach EZ-IO-Nadelfarben), Lage, Seite */
+const ACCESS={
+ 'pVK':{sl:'Größe / Farbe',sz:[['24G','gelb','#f2c400'],['22G','blau','#1f6fd1'],['20G','rosa','#ee9cbc'],['18G','grün','#2a9d4a'],['17G','weiß','#ffffff'],['16G','grau','#8a8f96'],['14G','orange','#f08a1c']],
+   lage:['Handrücken','Unterarm','Ellenbeuge','V. jugularis externa','Fuß']},
+ 'i.o.-Zugang':{sl:'Nadel (EZ-IO)',sz:[['15 mm','pink','#e5539a'],['25 mm','blau','#1f6fd1'],['45 mm','gelb','#f2c400']],
+   lage:['proximale Tibia','distale Tibia','Humeruskopf','distaler Femur']},
+ 'Arterie':{sl:'Größe',sz:[['22G'],['20G']],lage:['A. radialis','A. femoralis','A. brachialis']},
+ 'ZVK':{sl:'Lumen',sz:[['2-lumig'],['3-lumig'],['4-lumig'],['5-lumig']],lage:['V. jugularis interna','V. subclavia','V. femoralis'],sono:1}};
+function accPanel(name){const A=ACCESS[name];return `<div class="accp"><div class="acch">${esc(name)} – Details</div>
+ <div class="fld"><span>${A.sl}</span><div class="seg" data-ak="sz">${A.sz.map(([v,c,h])=>`<button data-av="${esc(v)}"${c?` data-ac="${c}"`:''}>${h?`<i class="cdot" style="background:${h}"></i>`:''}${esc(v)}${c?` <small>${c}</small>`:''}</button>`).join('')}</div></div>
+ <div class="fld"><span>Lage</span><div class="seg" data-ak="lage">${A.lage.map(v=>`<button data-av="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
+ <div class="fld"><span>Seite</span><div class="seg" data-ak="seite"><button data-av="rechts">rechts</button><button data-av="links">links</button></div></div>
+ ${A.sono?`<div class="fld"><span>Anlage</span><div class="seg" data-ak="sono"><button data-av="sonographisch gesteuert">sonographisch gesteuert</button></div></div>`:''}</div>`}
 function measureSheet(){const recent=[...new Set(S.meds.map(m=>m.x))].slice(-6).reverse();
  sheet(`<h2>Maßnahme / Medikament</h2>
  <div class="mq">${MEAS.map(([L,t,xs])=>`<div class="mgrp"><span class="ltr" title="${t}">${L}</span><div class="seg">${xs.map(x=>`<button data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>`).join('')}</div>
+ <div id="accPanel" hidden></div>
  ${recent.length?`<div class="fld"><span>Zuletzt verwendet</span><div class="seg">${recent.map(r=>`<button data-q="${esc(r)}" data-full="1">${esc(r)}</button>`).join('')}</div></div>`:''}
  <label class="fld"><span>Was – Details ergänzen (Dosis, Weg, Lage …)</span><input id="mIn" placeholder="Schnellauswahl antippen oder frei eingeben" autocomplete="off"></label>
  <div class="fld"><span>Uhrzeit</span><div class="row" style="flex-wrap:nowrap"><input id="mT" type="time" style="flex:1"><button class="btn" id="mNow" type="button">Jetzt</button></div><span class="hint" id="mTh">Leer = Zeitpunkt des Speicherns</span></div>
  <div class="row"><button class="btn ghost" data-close>Abbrechen</button><button class="btn red" id="mSave">Dokumentieren</button></div>`,bg=>{
   const inp=bg.querySelector('#mIn'),tm=bg.querySelector('#mT');
+  const ap=bg.querySelector('#accPanel');let acc=null;
+  const compose=()=>{const a=acc;const sz=a.sz?a.sz+(a.c?' ('+a.c+')':''):'';const lg=[a.lage,a.seite].filter(Boolean).join(' ');
+    inp.value=[a.name+(sz?' '+sz:''),lg,a.sono].filter(Boolean).join(' · ');inp.classList.remove('bad')};
   bg.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{bg.querySelectorAll('[data-q]').forEach(x=>x.classList.toggle('on',x===b));
-    inp.value=b.dataset.full?b.dataset.q:b.dataset.q+' ';inp.classList.remove('bad');inp.focus();try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}});
+    const q=b.dataset.q;
+    if(ACCESS[q]&&!b.dataset.full){acc={name:q};ap.innerHTML=accPanel(q);ap.hidden=false;compose();
+      ap.querySelectorAll('[data-ak]').forEach(g=>g.onclick=e=>{const x=e.target.closest('button');if(!x)return;const k=g.dataset.ak;const same=acc[k]===x.dataset.av;
+        acc[k]=same?'':x.dataset.av;if(k==='sz')acc.c=same?'':(x.dataset.ac||'');g.querySelectorAll('button').forEach(y=>y.classList.toggle('on',!same&&y===x));compose()});
+      ap.scrollIntoView({block:'nearest'});return}
+    acc=null;ap.hidden=true;ap.innerHTML='';
+    inp.value=b.dataset.full?q:q+' ';inp.classList.remove('bad');inp.focus();try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(e){}});
   const setNow=()=>{tm.value=hm(Date.now());bg.querySelector('#mTh').textContent='Jetzt gesetzt: '+tm.value};
   bg.querySelector('#mNow').onclick=setNow;
   const go=()=>{const x=inp.value.trim();if(!x){inp.classList.add('bad');return}const t=timeToday(tm.value)||Date.now();
