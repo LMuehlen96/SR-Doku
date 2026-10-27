@@ -352,14 +352,14 @@ V.tto2=()=>{const pr=S.tto2.prio;const nxt=pr.length<5?suggOrder().find(L=>!pr.i
 return `<div class="grid">
 ${card('–','Team-Time-Out II',`
  <h3>Zustand</h3>${seg('tto2.zust',['kritisch','stabil'],'big')}
- <h3>Formuliere Leitsymptom <span class="h3n">– bis zu zwei</span></h3>
- <div class="seg">${LEIT.map(l=>{const on=S.tto2.leit.includes(l);return `<button data-act="leit" data-v="${l}" class="${on?'on':''}" aria-pressed="${on}">${l}</button>`}).join('')}</div>
- <div id="leitFreeWrap" ${S.tto2.leit.includes('anderes')?'':'hidden'}>${fld('tto2.leitFree','Leitsymptom (Freitext)')}</div>
- <h3>Priorisiere ABCDE <span class="h3n">– alle fünf in der gewünschten Reihenfolge antippen</span></h3>
+ <h3>Problem-Priorisierung ABCDE <span class="h3n">– alle fünf in der gewünschten Reihenfolge antippen</span></h3>
  <div class="seg prio">${'ABCDE'.split('').map(L=>{const i=pr.indexOf(L);return `<button data-act="prio" data-l="${L}" class="${i>=0?'on':''}${L===nxt?' sugg':''}" aria-pressed="${i>=0}">${i>=0?`<span class="ord">${i+1}</span>`:''}${L}</button>`}).join('')}</div>
  <div class="prioline ${pr.length===5?'full':''}">${pr.map((L,i)=>`<span class="pchip"><small>${i+1}.</small>${L}</span>`).join('<span class="arr">›</span>')}<span class="pstat">${pr.length===5?'✓ vollständig':`noch ${5-pr.length} offen`}</span></div>
  <div class="row"><button class="btn ghost small" data-act="prioSugg">Vorschlag übernehmen</button><button class="btn ghost small" data-act="prioClr">Reihenfolge zurücksetzen</button></div>
  <p class="hint">${probs.length?'Als Problem markiert: <b>'+probs.map(p=>p[0]).join(', ')+'</b>. ':'In der Erstversorgung ist noch kein Buchstabe als Problem markiert. '}Vorschlag: <b>${suggOrder().join(' › ')}</b> (Problem-Buchstaben zuerst, dann in ABCDE-Reihenfolge; orange = nächster Vorschlag). Erneutes Antippen entfernt einen Buchstaben.</p>
+ <h3>Formuliere Leitsymptom <span class="h3n">– bis zu zwei</span></h3>
+ <div class="seg">${LEIT.map(l=>{const on=S.tto2.leit.includes(l);return `<button data-act="leit" data-v="${l}" class="${on?'on':''}" aria-pressed="${on}">${l}</button>`}).join('')}</div>
+ <div id="leitFreeWrap" ${S.tto2.leit.includes('anderes')?'':'hidden'}>${fld('tto2.leitFree','Leitsymptom (Freitext)')}</div>
  ${fld('tto2.note','Kurzzusammenfassung SR-Leitung',{ta:1})}
  <button class="btn red big-go" data-act="tto2done">${S.tto2.at?'TTO II durchgeführt um '+hm(S.tto2.at)+' · erneut':'TTO II durchgeführt → AUD²'}</button>`,{c:'red'})}
 </div>`};
