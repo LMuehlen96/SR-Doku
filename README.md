@@ -15,3 +15,7 @@ Die App ist **nicht freigegeben** und passwortgeschützt. `index.html` enthält 
 
 ## Wichtiger Hinweis
 Prototyp – **kein Medizinprodukt**. Ersetzt weder ärztliche Entscheidung noch die Dokumentation im KIS. Versand von Patientendaten per Mail nur über klinikintern zugelassene Wege.
+
+
+---
+© 2026 Lars Mühlen · Nicht freigegebene Version.
