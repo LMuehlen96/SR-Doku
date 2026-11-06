@@ -1,4 +1,6 @@
-# SR-Doku
+# SR-Doku Pro
+
+*Pro* = was technisch möglich ist (u. a. Priorisierungsvorschlag, V²iSiON-Trigger, DD-Checkliste nach LOD-Karten). **Prototyp, nicht freigegeben; die MDR-Einstufung ist ausstehend.** Die schlanke, für die MDR unkritische Variante ist *SR-Doku Basic* (Repo SR-Doku-Basic).
 
 Allgemeine **Schockraumdokumentation** als offline-fähige Single-File-Web-App (PWA) nach dem (PR_E-)AUD²IT-Basisalgorithmus mit SINNHAFT-Übergabe (Gräff et al., Notfall Rettungsmed 2024; RDA Bayern/DGINA 2024). Eigenständige App neben [MEGA-CodeSR](https://github.com/LMuehlen96/MEGA-CodeSR) (Reanimation).
 
@@ -14,7 +16,7 @@ Voranmeldung & TTO I · SINNHAFT-Übergabe (N cABCDE / H Handlung) · Primary su
 Die App ist **nicht freigegeben** und passwortgeschützt. `index.html` enthält nur eine Sperrseite und die mit AES-256-GCM verschlüsselte App (Schlüssel per PBKDF2-SHA256 aus dem Passwort). Der Quelltext der App liegt nicht im Klartext in diesem Repository. Das Passwort erhalten berechtigte Instruktor:innen über die AG Schockraum.
 
 ## Wichtiger Hinweis
-Prototyp – **kein Medizinprodukt**. Ersetzt weder ärztliche Entscheidung noch die Dokumentation im KIS. Versand von Patientendaten per Mail nur über klinikintern zugelassene Wege.
+Prototyp – **nicht freigegeben, MDR-Einstufung ausstehend, nicht für den Einsatz am Patienten**. Ersetzt weder ärztliche Entscheidung noch die Dokumentation im KIS. Versand von Patientendaten per Mail nur über klinikintern zugelassene Wege.
 
 
 ---
